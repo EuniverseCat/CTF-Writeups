@@ -244,11 +244,11 @@ A9-140 items
 ```
 I copied all the data into the relevant places (00010203 into pokemon, 919293 into progress flags, etc), made a savestate, saved the game, and uploaded the file.  
 ![](/ZZAZZ/2019/Images/PK4-Expired.png)  
-Oh well. Didn't really expect to get it first try. I'll just feed [loud bastard child](/ZZAZZ/2019/Images/Spencer1.jpg) and try again.
+Oh well. Didn't really expect to get it first try. I'll just feed [loud bastard child](https://cdn.discordapp.com/attachments/693835817751281664/834634269296164868/IMG_20210421_203714684.jpg) and try again.
 
 WAIT. It didn't say my save was corrupted or anything. It said it was in the wrong location. I enter Pwnage Kingdom 4 on the site, upload the same file and it works!  
 ![](/ZZAZZ/2019/Images/PK4-Solved.png)  
-I now feed [loud bastard child](/ZZAZZ/2019/Images/Spencer2.jpg) in celebration, who really wants dinner and could not care less about the achievement I just accomplished.
+I now feed [loud bastard child](https://cdn.discordapp.com/attachments/658175508856569857/834459119632515072/IMG_20210421_085328287.jpg) in celebration, who really wants dinner and could not care less about the achievement I just accomplished.
 
 
 ## 2021 - Road to Infinity
@@ -415,6 +415,6 @@ It was really cool how the previous challenges all mattered for this final one -
 
 There were a few oversights I made with my solution which could have made this easier. First, the intended use of the 99 stack glitch was to make the opcode `ld sp,hl` appear, which gave much more control over the stack pointer than map data did. I'm kinda glad I missed this tbh - it forced me to come up with what I think is a more interesting way of obtaining ACE. Second, I kind of fixated on 0xD9 appearing at the stack pointer, in order to return to map data. However, the values 0xC9, 0xCA, and 0xCB would have also returned to map data, and I completely forgot about them. This would have given me a lot more maps to work with -- maybe if I had realized this earlier, my final TAS wouldn't have been 5 hours. Third was the presence of a useful value in the HL register - it pointed to wPasswordRandom, a controllable byte. While I did end up using this, I could have used it in a way that would have allowed me to work with more maps. Still, I'm incredibly proud of the work I put into solving this.
 
-(Also, [here's my notes for the last challenge.](/ZZAZZ/2021/Files/HC4%20Notes.txt))
+(Also, [here's my notes for the last challenge.](/ZZAZZ/2021/Files/HC4%20notes.txt))
 
 Hopefully I'll be able to participate in the event as it's going on next year! Looking forward to it.
