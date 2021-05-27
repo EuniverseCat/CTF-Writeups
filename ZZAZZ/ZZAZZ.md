@@ -216,7 +216,7 @@ ret
 ```
 It's 10 pm, I'm too tired for this shit.
 
-The next day:
+The next day:  
 So I know about [ROP](https://en.wikipedia.org/wiki/Return-oriented_programming) in theory, but actually encountering it is a totally different thing. The concept is, by hijacking the stack pointer, you can write a program using existing code by returning to just before a return instruction, executing a few instructions, and repeating. With control of the call stack, you effectively have total control of what code is executed. It's just really hard to wrap your head around, since it executes code in a completely non-linear order. 
 
 But it gets worse. I start looking at what the ROP does, and it's not pretty. There's a jumptable located right after this code (More precisely, a table of stack pointer values.) What it does (or at least, what it *would* do, if this was written in a sane way) is call a function in that jumptable, based on the value at the address in the de register. ([my transcribed assembly is here](/ZZAZZ/2019/Code/pk4.asm) - I'm talking about ropFuncAE18.) We've basically got a glorified bytecode interpreter, written in ROP.
@@ -320,8 +320,8 @@ Ok then.
 
 Arbitrary code exploits in games are among the most interesting exploits out there, in my opinion. Early games often have extremely little controllable data to work with, making running even simple code quite complex. Here are a couple of my favorites -- would highly recommend checking these out if this kinda stuff interests you.
 
-Super Mario World: https://www.youtube.com/watch?v=vAHXK2wut_I
-Zelda 1: https://www.youtube.com/watch?v=fj9u00PMkYU
+Super Mario World: https://www.youtube.com/watch?v=vAHXK2wut_I  
+Zelda 1: https://www.youtube.com/watch?v=fj9u00PMkYU  
 Ocarina of Time: https://www.youtube.com/watch?v=wdRJWDKb5Bo
 
 I also would recommend looking at other people's writeups - to my knowledge, every single person who solved this challenge did so differently.  
