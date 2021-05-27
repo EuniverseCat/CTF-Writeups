@@ -47,18 +47,18 @@ function itemgethandler()
     return 
   end
   _callback = function()
-  savestate.loadslot(1)
-  delayFrames = 1
-  readnewchar = false
+    savestate.loadslot(1)
+    delayFrames = 1
+    readnewchar = false
   end
 end
 
 function encounterhandler()
   _callback = function()
-  savestate.loadslot(1)
-  savestate.saveslot(2)
-  delayFrames = 1
-  readnewchar = false
+    savestate.loadslot(1)
+    savestate.saveslot(2)
+    delayFrames = 1
+    readnewchar = false
   end
 end
 
