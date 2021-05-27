@@ -6,7 +6,7 @@ My first real foray into programming was back in 2018, for ZZAZZ's 2018 April Fo
 This year's save was structured quite differently than future ones, and is based off of glitch knowledge, rather than just being a game to play through. Cool concept, but unfortunately inaccessible to all but a tiny group of people.
 
 ### 31337
-Difficulty: 4/10
+Difficulty: 4/10  
 This achievement is unobtainable through normal means. You know what to do!
 
 Here we go! At the end of the game, a password is generated. This password includes an encoded version of your in-game time and the in-game achievements you've accomplished. You enter this password on a website to receive a score. I found the password code by putting a read breakpoint on the in-game time. The password code I analyzed did something like this:
@@ -16,7 +16,7 @@ Here we go! At the end of the game, a password is generated. This password inclu
 - For each achievement, it checks if a specific byte is equal to a specific value.
   - If it is, it sets a bit of a variable.
 
-I figure if I set that variable to 0xFF, I'll get the final achievement. I try that and…. my password doesn't change. Hmm. A quick look at the code shows the instruction `and a,3F` -- ignoring the top 2 bits of the variable even if it's set. I edited the code to `and a,FF`, entered the resulting password on the site, and it worked!
+I figure if I set that variable to 0xFF, I'll get the final achievement. I try that and…. my password doesn't change. Hmm. A quick look at the code shows the instruction `and a,3F` -- ignoring the top 2 bits of the variable even if it's set. I edited the code to `and a,FF`, entered the resulting password on the site, and it worked!  
 ![](/2017/31337.png)
 
 Main difficulty here was just finding the password code -- the way it checks achievements is rather indirect, so my initial attempts to find the code based on the other achievements were all unsuccessful. The only ways I found to quickly find the code were through the in-game time and pokedex flags, both of which directly accessed as part of the password algorithm. The overall code was quite easy, I think I solved this about 5 minutes after finding the code.
@@ -26,17 +26,17 @@ Main difficulty here was just finding the password code -- the way it checks ach
 Probably my favorite save to date - there's a client application which allows you to connect the game to a server via the game boy link cable. I'd recommend playing it on your own: https://fools2018.stranck.ovh/ (requires a ROM of Pokemon Yellow)
 
 ### Cracker Cavern 1 - I know how to edit memory
-Difficulty: 1/10
-Use whatever tools you desire to go through the rock barrier below. Note: basic protections against cheating are implemented.
+Difficulty: 1/10  
+Use whatever tools you desire to go through the rock barrier below. Note: basic protections against cheating are implemented.  
 ![](/2018/Images/CRACKER_CAVERN_I.webp)
 
-Easiest hacking challenge in one of these by far - I used the same approach as I did for the first room in the 2017 challenge and just edited the map. 
-https://www.youtube.com/watch?v=C6BOSZ10Bp4 
+Easiest hacking challenge in one of these by far - I used the same approach as I did for the first room in the 2017 challenge and just edited the map.
+https://www.youtube.com/watch?v=C6BOSZ10Bp4  
 (The anti-cheating protections just prevent walk-through-walls cheats)
 
 
 ### Cracker Cavern 2 - I got better at editing memory
-Difficulty: 6/10 (at least with my approach)
+Difficulty: 6/10 (at least with my approach)  
 As you may have noticed, this entire world is created of many different small maps. Use whatever tools you desire to visit a map with the hex identifier 0x1337.
 
 I initially tried to start by putting a breakpoint on the fade-to-black code, which plays when you enter a new room. After around 30 minutes of messing around with this, I realized I wasn't getting anywhere. I kept landing in a bunch of code which was part of the communication protocol, and the way the save loaded maps was separate from the way the base game did, so I couldn't really use that as a lead.
@@ -45,10 +45,10 @@ So I decided to reverse the communication protocol instead! Surely not the easie
 
 I started with the client application first - it's written in Python, so I could mess with the code without much effort. I rigged it to just print out any data it was sending to or receiving from the game.
 
-![](/2018/Images/CC2-server.png)
+![](/2018/Images/CC2-server.png)  
 *A typical exchange with the server when it loads a room*
 
-![](/2018/Images/CC2-packets.png)
+![](/2018/Images/CC2-packets.png)  
 *I could also use the functionalities in the emulator I'm using using to watch the data transfers, so the Python client mostly just served to confirm what I was seeing*
 
 I decided to focus on the first of the two outward data transfers. I was able to put a write breakpoint on the byte used for data transfer itself, and could find the block of data that was being sent pretty easily from that. Some analysis of this data later, I was able to put together a picture of what data was being sent when a room is loaded:
@@ -59,15 +59,15 @@ I decided to focus on the first of the two outward data transfers. I was able to
 - Inventory (41 bytes, copied from the player's inventory) 
 - ???\? (2 bytes, unknown)
 
-Those last 2 bytes look pretty suspicious to me. It's getting them from somewhere in pokemon box data, where this save stores a lot of code and variables. I try editing that data to 0x1337, and....
-![](/2018/Images/CC2-wrongmap.png)
-Hm. I'm clearly on the right path. Maybe it's little endian?
-![](/2018/Images/CC2-mysterious.png)
-I enter 0x3713 instead, and it loads a map named "Mysterious" and congratulates me for solving the challenge! 
+Those last 2 bytes look pretty suspicious to me. It's getting them from somewhere in pokemon box data, where this save stores a lot of code and variables. I try editing that data to 0x1337, and....  
+![](/2018/Images/CC2-wrongmap.png)  
+Hm. I'm clearly on the right path. Maybe it's little endian?  
+![](/2018/Images/CC2-mysterious.png)  
+I enter 0x3713 instead, and it loads a map named "Mysterious" and congratulates me for solving the challenge!  
 
 
 ### Cracker Cavern 4 - I reversed the communication protocol
-Difficulty: 6/10 
+Difficulty: 6/10  
 Make the final step forward and reverse-engineer the transmission protocol used to send data to the game server. To clear the final challenge, please send a packet with the command ID 0x77. The message body should contain three bytes: 0x13, 0x37, 0xCC.
 
 This only took about 5 minutes to solve after finishing CC2, with all the work I'd already done towards it. I expect the data I need to send to be as follows:
@@ -103,8 +103,8 @@ I replicated the [code](/2018/Code/CC3.cs) in C# without too much difficulty. No
 
 After a walk and some discussion with my dad, I had the idea that each correct byte of the key would correctly decrypt several bytes of the image. See, in the key scrambling portion of the decryption algorithm, different bytes of the key can affect each other, resulting in a highly unpredictable result. However, while the key is still modified during the part where it XORs the photo, it's much more predictable there. If the 0th byte of the photo is XORed with 0x01, then the 10th will always be XORed with 0xF1, the 20th with 0xA9, the 30th with 0x77, and so on. If a single byte is decrypted correctly, then every 10th byte afterward will also be decrypted correctly.
 
-Using this knowledge, I was to calculate what the key should look like after the key scrambling process. (commented code in AnalyzePhoto() and AnalyzeLists()). I tried entering that key, and…
-![](/2018/Images/CC3-solution.png)
+Using this knowledge, I was to calculate what the key should look like after the key scrambling process. (commented code in AnalyzePhoto() and AnalyzeLists()). I tried entering that key, and…  
+![](/2018/Images/CC3-solution.png)  
 Yay! Doesn't solve the problem (I only know what the key looks like after the scrambling process, not before) but it sure makes it a lot easier to check if an answer is right, and skips running a quarter of the code while I'm at it.
 
 I tried reversing the key scrambling algorithm -- it might be possible but I'm unsure, and I didn't have any luck with it, so I just let my computer bruteforce it, which took about 2 hours, and read a book in the meantime.
@@ -135,35 +135,36 @@ which is easily solvable.
 My second favorite save(s). Also would recommend playing these, although fair warning that the final boss is probably a little too hard. https://fools2019.stranck.ovh/ (Requires a Pokemon Crystal ROM.) Each area of the game has its own specific save, and you can only save after finishing an area. You upload your saves to the website to progress and get achievements.
 
 ### Pwnage Kingdom 1 - Blue Sailors of Death
-Difficulty: 2/10
-To your right, you can see a pair of friendly, nice trainers. Just kidding, they will crash the game if you try to fight them! Find a way to bypass both trainers and read the sign on the other side.
+Difficulty: 2/10  
+To your right, you can see a pair of friendly, nice trainers. Just kidding, they will crash the game if you try to fight them! Find a way to bypass both trainers and read the sign on the other side.  
 ![](/2019/Images/PK1-Start.png)
 
-After a little combing of the disassembly (link), I found a section of memory related to map objects. Changing the data of the 1st and 2nd objects (the trainers) allow you to bypass them, by say, changing their coordinates, or more comically, just making them face away from you. ![](/2019/Images/PK1-Solved.png)
+After a little combing of the disassembly (link), I found a section of memory related to map objects. Changing the data of the 1st and 2nd objects (the trainers) allow you to bypass them, by say, changing their coordinates, or more comically, just making them face away from you.  
+![](/2019/Images/PK1-Solved.png)
 
 Note: my first solution attempt was to interrupt the code that checked if a trainer would see me. It worked…. but not quite well enough. https://www.youtube.com/watch?v=gmCY7XhedG4
 
 
 ### Pwnage Kingdom 2 - Unreferenced
-Difficulty: 3/10 with a good guess, 6/10 without
+Difficulty: 3/10 with a good guess, 6/10 without  
 This save file contains exactly two maps. You're currently standing in one of them, but the other one is inaccessible. Or is it? Perhaps there's a way to access it? That's your job. Enter the lost, hidden second map to proceed.
 
-There are two variables - wMapGroup and wMapNumber - where the current map is stored. (I kinda just poked around in map loading code until I found them.) Change these to, say, 1 and 1, and you too can spawn on the counter in the Olivine City Pokecenter! 
-![](/2019/Images/PK2-Olivine.png)
+There are two variables - wMapGroup and wMapNumber - where the current map is stored. (I kinda just poked around in map loading code until I found them.) Change these to, say, 1 and 1, and you too can spawn on the counter in the Olivine City Pokecenter!  
+![](/2019/Images/PK2-Olivine.png)  
 Now if you had thought of it, you could try setting the map ID to 1 higher than the map where you spawn in. Yeah, that's the answer. You spawn in map 9163, the map you want to load is 9164. Needless to say, I did not think of this.
 
-By looking at what reads wMapGroup/wMapNumber, I was able to find a 9 byte map header stored in Pokemon box data. Wasn't able to make much sense of it, but I figured it must have been copied there at some point. I put a write breakpoint on that, and… wait what?
-![](/2019/Images/PK2-Copy.png)
-It's copying 100 bytes (0x64) in. Now this could just be more map data, but I'd expect all the headers to be next to each other in the save (that's where it's copying from). The way the game finds the headers is effectively (some pointer found based on wMapGroup) + (9 * wMapNumber). This means that increasing the map number to somewhere between 64 and 73 would mean the game would still be reading from this data it copied in. Worth a shot I guess? I try 64, and
-![](/2019/Images/PK2-Solved.png)
+By looking at what reads wMapGroup/wMapNumber, I was able to find a 9 byte map header stored in Pokemon box data. Wasn't able to make much sense of it, but I figured it must have been copied there at some point. I put a write breakpoint on that, and… wait what?  
+![](/2019/Images/PK2-Copy.png)  
+It's copying 100 bytes (0x64) in. Now this could just be more map data, but I'd expect all the headers to be next to each other in the save (that's where it's copying from). The way the game finds the headers is effectively (some pointer found based on wMapGroup) + (9 * wMapNumber). This means that increasing the map number to somewhere between 64 and 73 would mean the game would still be reading from this data it copied in. Worth a shot I guess? I try 64, and  
+![](/2019/Images/PK2-Solved.png)  
 oh. Didn't really expect that to actually work. Nice. If it hadn't, my next plan of action would have been to check where the game kept headers for other maps, which I could check in other save files.
 
 (Note: I solved this in 2019 on pure accident. I found wMapGroup and wMapNumber and nothing beyond that. I had set the two variables to different values, just messing around, and meant to set them back to their initial values. I must have typoed and entered the map number instead. I didn't actually realize how I'd "solved" it until much later.)
 
 
 ### Pwnage Kingdom 3 - Encryptic
-Difficulty: 10/10
-This save file contains exactly two maps. You're currently standing in one of them. The other one is encrypted. Thankfully, you won't have to break the encryption. The algorithm and the key are all available to you! You can just walk up to the rock in front of the entrance, and decryption will begin. The problem is, the algorithm might take some time. Just a tiny bit. By tiny bit, I mean a couple thousand years. Or maybe there's a way to speed up the decryption? That's for you to find out! Decrypt the map and visit it to proceed.
+Difficulty: 10/10  
+This save file contains exactly two maps. You're currently standing in one of them. The other one is encrypted. Thankfully, you won't have to break the encryption. The algorithm and the key are all available to you! You can just walk up to the rock in front of the entrance, and decryption will begin. The problem is, the algorithm might take some time. Just a tiny bit. By tiny bit, I mean a couple thousand years. Or maybe there's a way to speed up the decryption? That's for you to find out! Decrypt the map and visit it to proceed.  
 ![](/2019/Images/PK3-Start.png)
 
 I've never worked with optimizing something like this, so I'm already a little worried before starting. Found the code through input handling code again -- [here's the asm](/2019/Code/pk3.asm) with a few added labels.
@@ -197,13 +198,13 @@ At this point I'm pretty sure over half of the runtime is just checking for whet
 
 
 ### Pwnage Kingdom 4 - Master of Saving
-Difficulty: 9.5/10
+Difficulty: 9.5/10  
 Reverse-engineer the game saving system. To prove your understanding of the save mechanics, you need to create a very special save file for me. Each completed save file contains a blob encoding variables related to your game progression. The server then decodes it and updates your progress. To pass the challenge, every byte in the DECODED blob has to be equal to its offset in the data, mod 256. So, byte on offset $3F should have the value $3F. And on $1C3, it should be $C3. There are two exceptions. First, any checksum bytes are exempt from this rule. Second, the four decoded bytes at offset $1A5 should have special values: (these vary for each user). This is to make sure it's impossible to upload files created by other users. Submit this special file to Pwnage Kingdom IV to finish the challenge.
 
 Okay… this sounds intimidating, but let's get an idea what I'm looking at. I try to save the game, and "The aura of Missingno.'s corruption prevents you from saving" pops up. Funny. I'll just analyze the save in a location where I can actually save the game; I don't see any reason to try to bypass this.
 
-I again find the save code by tracing execution from input handling code. The start of the save routine looks like this: 
-![](/2019/Images/PK4-ROP.png)
+I again find the save code by tracing execution from input handling code. The start of the save routine looks like this:  
+![](/2019/Images/PK4-ROP.png)  
 So it prints some text, does some graphics stuff (Request1bpp and AEDB both do graphical stuff), and then oh what the *fuck*.
 ```
 ld sp,AE18
@@ -239,12 +240,12 @@ A9-140 items
 1AC-1AD timer registers + checksum
 1AE-1AF overall checksum
 ```
-I copied all the data into the relevant places (00010203 into pokemon, 919293 into progress flags, etc), made a savestate, saved the game, and uploaded the file.
-![](/2019/Images/PK4-Expired.png)
+I copied all the data into the relevant places (00010203 into pokemon, 919293 into progress flags, etc), made a savestate, saved the game, and uploaded the file.  
+![](/2019/Images/PK4-Expired.png)  
 Oh well. Didn't really expect to get it first try. I'll just feed [loud bastard child](/2019/Images/Spencer1.jpg) and try again.
 
-WAIT. It didn't say my save was corrupted or anything. It said it was in the wrong location. I enter Pwnage Kingdom 4 on the site, upload the same file and it works!
-![](/2019/Images/PK4-Solved.png)
+WAIT. It didn't say my save was corrupted or anything. It said it was in the wrong location. I enter Pwnage Kingdom 4 on the site, upload the same file and it works!  
+![](/2019/Images/PK4-Solved.png)  
 I now feed [loud bastard child](/2019/Images/Spencer2.jpg) in celebration, who really wants dinner and could not care less about the achievement I just accomplished.
 
 
@@ -252,7 +253,7 @@ I now feed [loud bastard child](/2019/Images/Spencer2.jpg) in celebration, who r
 Cool conceptually, but not the most interesting to actually play through. You play in a procedurally generated map, and have to explore through differently themed areas to progress.
 
 ### Hacking Challenge 1 - Far Lands
-Difficulty: 2/10 (0/10 with a walk through walls cheat and some time)
+Difficulty: 2/10 (0/10 with a walk through walls cheat and some time)  
 There are no infinite worlds, computers are discrete machines. So maybe this world has an edge too? Walk 524272 steps in any cardinal directions to find out.
 
 Some people actually solved this by using a walk-through-walls cheat and using something to weigh down their directional and fast forward keys. Can't say I endorse that method.
@@ -262,15 +263,15 @@ First off, 524272 is roughly 2^19, which is a weird number. Don't really know wh
 I started with the variables wYCoord and wXCoord. They're locked between 0x10 and 0x1F for some reason, if you move outside of a 16x16 area, they loop. I put a breakpoint on the Y coordinate and pretty quickly found some code that was causing the loop. I didn't bother analyzing the code -- I just walked north, and every time the code was run, one of the values in a register decreased by one. I figure this value has something to do with what map the player is on - if each map is 16x16, then the challenge becomes "Walk 2^15 - 1 maps in any direction," which would make perfect sense if the variables that keep track of which map you're on are signed shorts. I try setting that register equal to 0x7FFF, and I end up here:
 ![](/2021/Images/HC1-fail.png)
 
-Well it worked. I'm just in a tree. I tried this in another location, where I didn't warp into a tree… and immediately got a game over because the wild encounter was so strong. I tried again, this time using savestates to avoid encounters, and
-![](/2021/Images/HC1-solved.png)
+Well it worked. I'm just in a tree. I tried this in another location, where I didn't warp into a tree… and immediately got a game over because the wild encounter was so strong. I tried again, this time using savestates to avoid encounters, and  
+![](/2021/Images/HC1-solved.png)  
 Congratulations, you reached the end of the world. Kind of. The world will loop back around. Glitchtopia isn't flat. That said, here's a reward for coming this far! (challenge 1 password)
 
 (Alternative, slightly funnier solution: I figure it's checking whether the map coordinate is equal to 0x7FFF, and I found the code that checks whether to give you the achievement by just searching for `cp a,7F`. Modifying this code lets you "reach" the edge of the world without even moving.)
 
 
 ### Hacking Challenge 2 - YEDONG'S TAIL
-Difficulty: 3/10
+Difficulty: 3/10  
 One of the achievements is programmed to be obtainable through normal means. But if you were to understand the game's password system, maybe you could create and submit a password that unlocks that special reward…
 
 This is essentially a nerfed version of the 2017 challenge. The password is just in straight hex, so it was trivial to search for it in RAM and put a write breakpoint on it, which landed me at roughly the start of the password generation routine. The password routine sets up an unencrypted password before encrypting it -- the first byte is the play time in minutes, second is a bunch of flags which I assume are the achievements in question, 3rd is.... some variable, I'm not sure, 4th is random. Change the second byte to 0xFF, and I got the achievement.
@@ -279,8 +280,8 @@ This is essentially a nerfed version of the 2017 challenge. The password is just
 
 
 ### Hacking Challenge 3 - Worry Seed
-Difficulty: 7/10 in terms of actual difficulty, but so much of this challenge is essentially busywork so effectively higher.
-I was playing this event, and I found a very interesting seed! The problem is… I don't remember it. But I have a screenshot of the location I spawned in at. Maybe you can use it to recover the seed I used? I also happen to remember that the last digit of the seed was "1".
+Difficulty: 7/10 in terms of actual difficulty, but so much of this challenge is essentially busywork so effectively higher.  
+I was playing this event, and I found a very interesting seed! The problem is… I don't remember it. But I have a screenshot of the location I spawned in at. Maybe you can use it to recover the seed I used? I also happen to remember that the last digit of the seed was "1".  
 ![](/2021/Images/HC3-goal.png)
 
 I was excited about this one at first. I've done [work to search for fast seeds in randomizers before](https://www.youtube.com/watch?v=PuPxjKeVMvY), so this seems right up my alley.
@@ -291,17 +292,19 @@ I considered some alternate approaches to avoid having to go through all that co
 
 After a solid few days of working on this off and on, I finally got some C code ([here](/2021/Code/foolsHC3.c)) ([but look at HC4 code instead](/2021/Code/foolsHC4.c)) that could replicate a map generated in the game. Nothing too interesting about most of it. I set that up to bruteforce the seed, and… got 780 results. Ah.
 
-![](/2021/Images/HC3-falsepositive.png)*One of the false positives*
+![](/2021/Images/HC3-falsepositive.png)  
+*One of the false positives*
 
-It's important to understand how the game determines where to place you. After the starting map is generated, it goes through each tile of the map, and places you on the first normal ground tile it finds. In the goal image, since there's a normal ground tile on the row above the spawn point, I know I'm spawning in on the top row of the map. ![](/2021/Images/HC3-chunkboundary.png)*We could technically be on the rightmost column instead, but I'm politely ignoring that possibility for now.*
+It's important to understand how the game determines where to place you. After the starting map is generated, it goes through each tile of the map, and places you on the first normal ground tile it finds. In the goal image, since there's a normal ground tile on the row above the spawn point, I know I'm spawning in on the top row of the map. ![](/2021/Images/HC3-chunkboundary.png)  
+*We could technically be on the rightmost column instead, but I'm politely ignoring that possibility for now.*
 
 In the interest of not having to work in C anymore, I made the assumption that only two maps were being shown at the spawn point - the starting map and the one above it. (This was a pretty big assumption -- notably any spawn in the the first 2 blocks of a map would show 4 maps - but it ended up being correct.) At the time, I was only checking for matches in the bottom map, hence all the false positives. I added a check in for the top map, ran my code, and after a few minutes, it got a match! It was 1 am. My sleep schedule is still a bit messed up as I write this.
 
 
 ### Hacking Challenge 4 - Real ACE Hours
-Difficulty: Yes
-Gen I Pokemon games are notoriously glitchy. And if you're build a new game on top of an already broken engine, things might break. Spectacularly. The final task is to find and exploit an arbitrary code execution vulnerability in the save file itself.
-To solve this task, you'll need to make a TAS which records from power on, and use any actions you need to take control of the instruction pointer.
+Difficulty: Yes  
+Gen I Pokemon games are notoriously glitchy. And if you're build a new game on top of an already broken engine, things might break. Spectacularly. The final task is to find and exploit an arbitrary code execution vulnerability in the save file itself.  
+To solve this task, you'll need to make a TAS which records from power on, and use any actions you need to take control of the instruction pointer.  
 Your payload should jump to address $B882. It contains a small routine that just shows some text on the screen: "Congratulations. You got ACE!". The text does not have to appear on screen - as long as the routine runs and doesn't crash in the process, you're good to go.
 
 Well.
@@ -314,10 +317,10 @@ Super Mario World: https://www.youtube.com/watch?v=vAHXK2wut_I
 Zelda 1: https://www.youtube.com/watch?v=fj9u00PMkYU
 Ocarina of Time: https://www.youtube.com/watch?v=wdRJWDKb5Bo
 
-I also would recommend looking at other people's writeups - to my knowledge, every single person who solved this challenge did so differently.
-Stranck: https://stranck.ovh/writeups/data/fools2021/#Fourth-hacking-challenge
-Buurazu: https://pastebin.com/UH8bJBz8
-jfb1337: https://github.com/joefarebrother/Fools2021
+I also would recommend looking at other people's writeups - to my knowledge, every single person who solved this challenge did so differently.  
+Stranck: https://stranck.ovh/writeups/data/fools2021/#Fourth-hacking-challenge  
+Buurazu: https://pastebin.com/UH8bJBz8  
+jfb1337: https://github.com/joefarebrother/Fools2021  
 Couldn't find anything from Drenn or NieDzejkob.
 
 I've never really touched any arbitrary code stuff before, and I was much more interested in that than looking for an entry point, so I used Stranck's writeup for a clue to a starting place. He wrote that he "knew from the GCRI discord that there was a bug in the inventory: if you have exactly 40 items and you try to open the item menu the game crashes." The inventory actually would have been my first place to look at anyway -- dunno if I would have found my entry point without that hint though.
@@ -334,7 +337,7 @@ With these limitations, I had to toss the Life Seeds idea out - it just didn't h
 
 D9D4 is in map data, and is therefore partially controllable. I started analyzing the map code further, to see what bytes could appear in the map (aka where I could return to), and only corruption biomes seemed to have much potential.
 
-![](/2021/Images/HC4-corruption.png)
+![](/2021/Images/HC4-corruption.png)  
 *Corruption biomes have these glitchy looking tiles which have higher IDs than other tiles - these are interesting, as they could cause a return into RAM.*
 
 The most interesting places I could return to were DBxx (item data) and C9xx/CAxx/CBxx/D9xx (map data, again). Item data didn't seem promising -- there are only 18 kinds of items in the game, and I can't have more than 99 of an item -- so I started looking at what code could run in map data. My initial idea was that I could return to D9xx and get the code to survive a couple hundred bytes of map data without crashing, after which it would reach the in-game timer, which I could control. Unfortunately, corruption biomes are quite prone to crashing -- some of the aforementioned glitchy tiles are returns or non-existent opcodes, so that seemed like a bust. However, corruption biomes had some potentially interesting opcodes, notably 0x31, which could load a value to the stack pointer. (This isn't the first time this opcode has come up and it won't be the last.)
@@ -345,8 +348,8 @@ I went through every stack pointer that I could set it to and after testing a fe
 
 Well, kind of. I managed to jump to the goal function at B882 by memory hacking the right values into the right places, but there were still some *major* issues with my setup.
 
-Issue 1: The stack pointer. Part of this setup involved setting the stack pointer to 0AEC, which is a ROM address. If I wanted the game to not crash after jumping to the goal function, I'd have to put the stack pointer back in RAM. With 4 bytes in the seed, I can form the instructions `ld sp,hl` and `jp B882` which works... assuming the H register is unmodified. The opcode at DAB1 - 7 bytes before the seed - modifies the H register. This isn't looking great. I came up with two ways to potentially combat this, although they both have issues of their own:
-1 - Restrict the coordinates: The current map's x-coord is located at DAB4, and the y-coord at DAB6. This means they would be run as code. The most useful value would be 0x31 (sound familiar?) as the first byte of the y-coord, which would set the stack pointer to a location dependent on the second byte of the y-coord and the first byte of the seed.
+Issue 1: The stack pointer. Part of this setup involved setting the stack pointer to 0AEC, which is a ROM address. If I wanted the game to not crash after jumping to the goal function, I'd have to put the stack pointer back in RAM. With 4 bytes in the seed, I can form the instructions `ld sp,hl` and `jp B882` which works... assuming the H register is unmodified. The opcode at DAB1 - 7 bytes before the seed - modifies the H register. This isn't looking great. I came up with two ways to potentially combat this, although they both have issues of their own:  
+1 - Restrict the coordinates: The current map's x-coord is located at DAB4, and the y-coord at DAB6. This means they would be run as code. The most useful value would be 0x31 (sound familiar?) as the first byte of the y-coord, which would set the stack pointer to a location dependent on the second byte of the y-coord and the first byte of the seed.  
 2 - Restrict the jump to the seed: If the jump to the seed went straight to DAB8, it would bypass the issue entirely. Unfortunately, this exact thing is
 
 Issue 2: The jump to the seed. While the H register should nearly always be 0xDA after the code exits map data, few other registers are as predictable. Getting any register (or the value at the address in the HL register) between 8B and B8 is enough for the jump to the seed, but if I wanted to jump straight to the seed, this would become a major issue. I do have one trick up my sleeve for adjusting register values - the code run at D0D1 is some move data of the last pokemon that appeared. This actually includes the pokemon which appear on the title screen, and if Pidgeotto or Rhydon appeared last on the title screen, their data could give me a small amount of control over registers.
@@ -413,4 +416,3 @@ There were a few oversights I made with my solution which could have made this e
 (Also, [here's my notes for the last challenge.](/2021/Files/HC4%20Notes.txt))
 
 Hopefully I'll be able to participate in the event as it's going on next year! Looking forward to it.
-
