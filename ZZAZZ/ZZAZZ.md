@@ -45,10 +45,12 @@ So I decided to reverse the communication protocol instead! Surely not the easie
 
 I started with the client application first - it's written in Python, so I could mess with the code without much effort. I rigged it to just print out any data it was sending to or receiving from the game.
 
-![](/ZZAZZ/2018/Images/CC2-server.png)  
+<img src="/ZZAZZ/2018/Images/CC2-server.png" height="350"/>
+
 *A typical exchange with the server when it loads a room*
 
-![](/ZZAZZ/2018/Images/CC2-packets.png)  
+<img src="/ZZAZZ/2018/Images/CC2-packets.png" height="400"/>
+
 *I could also use the functionalities in the emulator I'm using using to watch the data transfers, so the Python client mostly just served to confirm what I was seeing*
 
 I decided to focus on the first of the two outward data transfers. I was able to put a write breakpoint on the byte used for data transfer itself, and could find the block of data that was being sent pretty easily from that. Some analysis of this data later, I was able to put together a picture of what data was being sent when a room is loaded:
@@ -60,9 +62,9 @@ I decided to focus on the first of the two outward data transfers. I was able to
 - ???\? (2 bytes, unknown)
 
 Those last 2 bytes look pretty suspicious to me. It's getting them from somewhere in pokemon box data, where this save stores a lot of code and variables. I try editing that data to 0x1337, and....  
-![](/ZZAZZ/2018/Images/CC2-wrongmap.png)  
+<img src="/ZZAZZ/2018/Images/CC2-wrongmap.png" height="250"/>  
 Hm. I'm clearly on the right path. Maybe it's little endian?  
-![](/ZZAZZ/2018/Images/CC2-mysterious.png)  
+<img src="/ZZAZZ/2018/Images/CC2-mysterious.png" height="250"/>  
 I enter 0x3713 instead, and it loads a map named "Mysterious" and congratulates me for solving the challenge!  
 
 
@@ -104,7 +106,7 @@ I replicated the [code](/ZZAZZ/2018/Code/CC3.cs) in C# without too much difficul
 After a walk and some discussion with my dad, I had the idea that each correct byte of the key would correctly decrypt several bytes of the image. See, in the key scrambling portion of the decryption algorithm, different bytes of the key can affect each other, resulting in a highly unpredictable result. However, while the key is still modified during the part where it XORs the photo, it's much more predictable there. If the 0th byte of the photo is XORed with 0x01, then the 10th will always be XORed with 0xF1, the 20th with 0xA9, the 30th with 0x77, and so on. If a single byte is decrypted correctly, then every 10th byte afterward will also be decrypted correctly.
 
 Using this knowledge, I was to calculate what the key should look like after the key scrambling process. (commented code in AnalyzePhoto() and AnalyzeLists()). I tried entering that key, and…  
-![](/ZZAZZ/2018/Images/CC3-solution.png)  
+<img src="/ZZAZZ/2018/Images/CC3-solution.png" height="250"/>  
 Yay! Doesn't solve the problem (I only know what the key looks like after the scrambling process, not before) but it sure makes it a lot easier to check if an answer is right, and skips running a quarter of the code while I'm at it.
 
 I tried reversing the key scrambling algorithm -- it might be possible but I'm unsure, and I didn't have any luck with it, so I just let my computer bruteforce it, which took about 2 hours, and read a book in the meantime.
@@ -137,10 +139,10 @@ My second favorite save(s). Also would recommend playing these, although fair wa
 ### Pwnage Kingdom 1 - Blue Sailors of Death
 Difficulty: 2/10  
 To your right, you can see a pair of friendly, nice trainers. Just kidding, they will crash the game if you try to fight them! Find a way to bypass both trainers and read the sign on the other side.  
-![](/ZZAZZ/2019/Images/PK1-Start.png)
+<img src="/ZZAZZ/2019/Images/PK1-Start.png" height="250"/>
 
 After a little combing of the disassembly (link), I found a section of memory related to map objects. Changing the data of the 1st and 2nd objects (the trainers) allow you to bypass them, by say, changing their coordinates, or more comically, just making them face away from you.  
-![](/ZZAZZ/2019/Images/PK1-Solved.png)
+<img src="/ZZAZZ/2019/Images/PK1-Solved.png" height="250"/>
 
 Note: my first solution attempt was to interrupt the code that checked if a trainer would see me. It worked…. but not quite well enough. https://www.youtube.com/watch?v=gmCY7XhedG4
 
@@ -150,13 +152,13 @@ Difficulty: 3/10 with a good guess, 6/10 without
 This save file contains exactly two maps. You're currently standing in one of them, but the other one is inaccessible. Or is it? Perhaps there's a way to access it? That's your job. Enter the lost, hidden second map to proceed.
 
 There are two variables - wMapGroup and wMapNumber - where the current map is stored. (I kinda just poked around in map loading code until I found them.) Change these to, say, 1 and 1, and you too can spawn on the counter in the Olivine City Pokecenter!  
-![](/ZZAZZ/2019/Images/PK2-Olivine.png)  
+<img src="/ZZAZZ/2019/Images/PK2-Olivine.png" height="250"/>  
 Now if you had thought of it, you could try setting the map ID to 1 higher than the map where you spawn in. Yeah, that's the answer. You spawn in map 9163, the map you want to load is 9164. Needless to say, I did not think of this.
 
 By looking at what reads wMapGroup/wMapNumber, I was able to find a 9 byte map header stored in Pokemon box data. Wasn't able to make much sense of it, but I figured it must have been copied there at some point. I put a write breakpoint on that, and… wait what?  
 ![](/ZZAZZ/2019/Images/PK2-Copy.png)  
 It's copying 100 bytes (0x64) in. Now this could just be more map data, but I'd expect all the headers to be next to each other in the save (that's where it's copying from). The way the game finds the headers is effectively (some pointer found based on wMapGroup) + (9 * wMapNumber). This means that increasing the map number to somewhere between 64 and 73 would mean the game would still be reading from this data it copied in. Worth a shot I guess? I try 64, and  
-![](/ZZAZZ/2019/Images/PK2-Solved.png)  
+<img src="/ZZAZZ/2019/Images/PK2-Solved.png" height="250"/>  
 oh. Didn't really expect that to actually work. Nice. If it hadn't, my next plan of action would have been to check where the game kept headers for other maps, which I could check in other save files.
 
 (Note: I solved this in 2019 on pure accident. I found wMapGroup and wMapNumber and nothing beyond that. I had set the two variables to different values, just messing around, and meant to set them back to their initial values. I must have typoed and entered the map number instead. I didn't actually realize how I'd "solved" it until much later.)
@@ -166,7 +168,7 @@ oh. Didn't really expect that to actually work. Nice. If it hadn't, my next plan
 Difficulty: 10/10  
 This save file contains exactly two maps. You're currently standing in one of them. The other one is encrypted. Thankfully, you won't have to break the encryption. The algorithm and the key are all available to you! You can just walk up to the rock in front of the entrance, and decryption will begin. The problem is, the algorithm might take some time. Just a tiny bit. By tiny bit, I mean a couple thousand years. Or maybe there's a way to speed up the decryption? That's for you to find out! Decrypt the map and visit it to proceed.
 
-![](/ZZAZZ/2019/Images/PK3-Start.png)
+<img src="/ZZAZZ/2019/Images/PK3-Start.png" height="250"/>
 
 I've never worked with optimizing something like this, so I'm already a little worried before starting. Found the code through input handling code again -- [here's the asm](/ZZAZZ/2019/Code/pk3.asm) with a few added labels.
 
@@ -189,7 +191,7 @@ However, with a period length of 513, this becomes much more complicated. After 
 Even for the worst possible period length, eliminating these redundant iterations is a 4-fold improvement, and since the vast majority of period lengths are either short or powers of 2, this brought down the total required time to under 3 minutes on my computer.
 
 (At this point I realized my endianness mistakes, and fixing those along with an off-by-one that took about 40 minutes to track down let me solve this challenge!)  
-![](/ZZAZZ/2019/Images/PK3-Solved.png)
+<img src="/ZZAZZ/2019/Images/PK3-Solved.png" height="250"/>
 
 #### Post-completion improvements
 It turns out there's one more pretty substantial improvement that can be made to the outer loop, which I did after completing the challenge. The outer loop has a period of length 2^30. This explains why only 1270 seeds had to be run -- the outer loop iterates 2^31 - 1270 times, so all but the last 1270 cancelled each other out. Knowing this, I can avoid having to keep track of how many times each seed was run, and just run the last 1270 seeds. This brought the runtime down to 47 seconds on my computer.
@@ -263,10 +265,10 @@ Some people actually solved this by using a walk-through-walls cheat and using s
 First off, 524272 is roughly 2^19, which is a weird number. Don't really know what to make of that yet. 
 
 I started with the variables wYCoord and wXCoord. They're locked between 0x10 and 0x1F for some reason, if you move outside of a 16x16 area, they loop. I put a breakpoint on the Y coordinate and pretty quickly found some code that was causing the loop. I didn't bother analyzing the code -- I just walked north, and every time the code was run, one of the values in a register decreased by one. I figure this value has something to do with what map the player is on - if each map is 16x16, then the challenge becomes "Walk 2^15 - 1 maps in any direction," which would make perfect sense if the variables that keep track of which map you're on are signed shorts. I try setting that register equal to 0x7FFF, and I end up here:  
-![](/ZZAZZ/2021/Images/HC1-fail.png)
+<img src="/ZZAZZ/2021/Images/HC1-fail.png" height="250"/>
 
 Well it worked. I'm just in a tree. I tried this in another location, where I didn't warp into a tree… and immediately got a game over because the wild encounter was so strong. I tried again, this time using savestates to avoid encounters, and  
-![](/ZZAZZ/2021/Images/HC1-solved.png)  
+<img src="/ZZAZZ/2021/Images/HC1-solved.png" height="250"/>  
 Congratulations, you reached the end of the world. Kind of. The world will loop back around. Glitchtopia isn't flat. That said, here's a reward for coming this far! (challenge 1 password)
 
 (Alternative, slightly funnier solution: I figure it's checking whether the map coordinate is equal to 0x7FFF, and I found the code that checks whether to give you the achievement by just searching for `cp a,7F`. Modifying this code lets you "reach" the edge of the world without even moving.)
@@ -284,7 +286,7 @@ This is essentially a nerfed version of the 2017 challenge. The password is just
 ### Hacking Challenge 3 - Worry Seed
 Difficulty: 7/10 in terms of actual difficulty, but so much of this challenge is essentially busywork so effectively higher.  
 I was playing this event, and I found a very interesting seed! The problem is… I don't remember it. But I have a screenshot of the location I spawned in at. Maybe you can use it to recover the seed I used? I also happen to remember that the last digit of the seed was "1".  
-![](/ZZAZZ/2021/Images/HC3-goal.png)
+<img src="/ZZAZZ/2021/Images/HC3-goal.png" height="250"/>
 
 I was excited about this one at first. I've done [work to search for fast seeds in randomizers before](https://www.youtube.com/watch?v=PuPxjKeVMvY), so this seems right up my alley.
 
@@ -294,10 +296,13 @@ I considered some alternate approaches to avoid having to go through all that co
 
 After a solid few days of working on this off and on, I finally got some C code ([here](/ZZAZZ/2021/Code/foolsHC3.c)) ([but look at HC4 code instead](/ZZAZZ/2021/Code/foolsHC4.c)) that could replicate a map generated in the game. Nothing too interesting about most of it. I set that up to bruteforce the seed, and… got 780 results. Ah.
 
-![](/ZZAZZ/2021/Images/HC3-falsepositive.png)  
+<img src="/ZZAZZ/2021/Images/HC3-falsepositive.png" height="250"/>
+
 *One of the false positives*
 
-It's important to understand how the game determines where to place you. After the starting map is generated, it goes through each tile of the map, and places you on the first normal ground tile it finds. In the goal image, since there's a normal ground tile on the row above the spawn point, I know I'm spawning in on the top row of the map. ![](/ZZAZZ/2021/Images/HC3-chunkboundary.png)  
+It's important to understand how the game determines where to place you. After the starting map is generated, it goes through each tile of the map, and places you on the first normal ground tile it finds. In the goal image, since there's a normal ground tile on the row above the spawn point, I know I'm spawning in on the top row of the map.  
+<img src="/ZZAZZ/2021/Images/HC3-chunkboundary.png" height="250"/>
+
 *We could technically be on the rightmost column instead, but I'm politely ignoring that possibility for now.*
 
 In the interest of not having to work in C anymore, I made the assumption that only two maps were being shown at the spawn point - the starting map and the one above it. (This was a pretty big assumption -- notably any spawn in the the first 2 blocks of a map would show 4 maps - but it ended up being correct.) At the time, I was only checking for matches in the bottom map, hence all the false positives. I added a check in for the top map, ran my code, and after a few minutes, it got a match! It was 1 am. My sleep schedule is still a bit messed up as I write this.
@@ -339,7 +344,8 @@ With these limitations, I had to toss the Life Seeds idea out - it just didn't h
 
 D9D4 is in map data, and is therefore partially controllable. I started analyzing the map code further, to see what bytes could appear in the map (aka where I could return to), and only corruption biomes seemed to have much potential.
 
-![](/ZZAZZ/2021/Images/HC4-corruption.png)  
+<img src="/ZZAZZ/2021/Images/HC4-corruption.png" height="250"/>
+
 *Corruption biomes have these glitchy looking tiles which have higher IDs than other tiles - these are interesting, as they could cause a return into RAM.*
 
 The most interesting places I could return to were DBxx (item data) and C9xx/CAxx/CBxx/D9xx (map data, again). Item data didn't seem promising -- there are only 18 kinds of items in the game, and I can't have more than 99 of an item -- so I started looking at what code could run in map data. My initial idea was that I could return to D9xx and get the code to survive a couple hundred bytes of map data without crashing, after which it would reach the in-game timer, which I could control. Unfortunately, corruption biomes are quite prone to crashing -- some of the aforementioned glitchy tiles are returns or non-existent opcodes, so that seemed like a bust. However, corruption biomes had some potentially interesting opcodes, notably 0x31, which could load a value to the stack pointer. (This isn't the first time this opcode has come up and it won't be the last.)
@@ -407,7 +413,7 @@ I modified my map generation code to generate the entire portion of the map I'd 
 
 I ended up with a 4 hour, 57 minute TAS. What an experience.
 
-![](/ZZAZZ/2021/Images/HC4-solved.png)
+<img src="/ZZAZZ/2021/Images/HC4-solved.png" height="100"/>
 
 https://www.youtube.com/watch?v=nlY6l7P-SJE (please don't actually watch this)
 
