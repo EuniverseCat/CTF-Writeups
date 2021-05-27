@@ -87,7 +87,7 @@ I edit the code to set the length and command to the values I want, and edit my 
 
 
 ### Cracker Cavern 3 - I know how to solve crackmes
-Difficulty: 8/10
+Difficulty: 8/10  
 I have a nice image for you. Unfortunately, it is encrypted. Figure out the key that makes the image look as intended. You can view the image and test various keys by interacting with the sign next to this one. The key is all numeric.
 
 For this challenge, along with PK3 and PK4, I used the same method to find the code. By placing a read breakpoint on variables relating to which buttons are currently pressed, I was able to land in the input handling code right before the code I was looking for, and could find the code without too much trouble.
