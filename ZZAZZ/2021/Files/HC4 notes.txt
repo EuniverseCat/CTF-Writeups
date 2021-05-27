@@ -1,0 +1,228 @@
+99 item stack glitch can happen if menu has not been opened
+what can be modified?
+
+inventory at DAE5
+
+03 HYPER_POTION 	: DB4A ;bankswitch code. pass!
+04 REVIVER_SEED 	: DB74 ;password generation code. :eyes:?
+0D BRAVERY_POTION	: DB7E ;password generation code - these bytes can be increased up to 0x63. 
+						   ;both are executed as the first byte of an opcode
+01 POTION 			: DBF2 ;unknown data. MAYBE could hijack something on the stack if that overflowed but it's a stretch
+05 LIFE_SEED		: DC34 ;controllable opcode in item code
+08 SUMMONING_SALT	: DCA8 ;data
+0C DAREDEVIL_POTION : DCF6 ;data
+0B SHYHORN			: DD0E ;data
+06 HARDENED_SCALE	: DD20 ;data
+07 SKIP_SANDWICH	: DD34 ;data
+0A GLITCH_SHARD		: DD48 with overflow i think (data)
+11 SHARP_BEAK		: C05C 
+02 SUPER_POTION 	: C0F0 with overflow
+12 SHARP_HORN		: CF92 i don't even WANT to know what happened here
+						   but this could potentially provide a significant
+						   amount of control over partially controllable RAM
+						   
+Let's look at 04 0D 05:
+
+05 is in some item ftn. The opcode runs once per on screen item when you open or change screens in the inventory. 
+Anything useful with this will have to be done last, to avoid messing up the inventory.
+	Initial byte: 36. This only has access to loads. Could maybe change a pointer and cause some weird data corruption?
+	Subsequent bytes: 7F 23.
+	Regs: a = 3E, bc = 0, de = CD7F, hl = CD7?, sp = DFED
+
+04 is run once in pw generation code. 
+	Initial byte: 11.
+	Subsequent bytes: D4 F9. 
+	Regs: a is variable, bc = 0404, de = 6200, hl = DAC0, sp = DFF3
+	
+0D is run once in pw generation code (it's run multiple times, but it's a jump, and will only run once if modified)
+	Initial byte: 20.
+	Subsequent bytes: F7 3E.
+	Regs: a is variable, bc = 0403, de is a *mess*, hl = DAC1, sp = DFF3
+	
+What potentially useful opcodes are there?
+0x18, jr r8: (only for first) this just fucks up the stack and rst 38s
+0x20, 28, 30, 38, conditional jrs:  it's literally a jr already, this changes nothing
+0x31, ld sp,d16: maybe? can set it to F9D4 or 3EF7. (The second instruction adds a dec sp afterward from the extra byte if you do this)
+0x34, 3B, inc/dec sp: self explanatory. unfortunately both rst 38.
+0x39, add hl,sp: add DAC0 or DAC1. both rst 38.
+
+where could we return to with a load to sp?
+the first does a LOT of returns before finally landing at the start of VRAM.
+I'll keep that on the back burner, but i'm more concerned about the data it's pulling the stack from.
+
+the second lands in serial data transfer lol, is rescued by vblank and then yeets itself into SOUND WAVE DATA and rst 38s. fuckin wild.
+
+what about a load then a dec? straight into VRAM...
+
+THE FIRST PULLS FROM MAP DATA. Boys and gamers, we got a controllable jump.
+Assuming these bytes are totally independent, we could jump to a *lot* of places. Where do we *want* to jump to?
+
+Only corruption seems useful
+
+0x08 - steppes, corruption
+0x0A - all
+0x0B - all
+0x0F - all
+0x13 - construct
+0x31 - corruption
+0x32 - forest, construct
+0x33 - forest
+0x34 - forest
+0x4D - construct
+0x4E - construct
+0x51 - construct
+0x52 - construct
+0x55 - construct
+0x60 - forest, construct
+0x6C - forest
+0x6D - forest
+0x6E - forest
+0x6F - forest
+0x74 - forest
+0x7A - forest, steppes, construct
+0x7B - steppes
+0xC9 - corruption
+0xCA - corruption
+0xCB - corruption
+0xD9 - corruption
+0xDB - corruption
+0xEC - corruption
+
+c9, ca, cb are just map data lol. Doesn't seem to be anything useful afterwards.
+cc may have a couple manipulatable bytes
+d9 has to survive several hundred bytes of map code but then would hit 3 bytes which are 100% controllable (play time)
+scary bytes are c9 (ret), ca (jp z,a16), d9 (reti), db (undocumented), ec (undocumented).
+ca/db can be avoided, d9 cannot (we run over the stack), ec is very common in corruption biomes.
+Looking at some actual data, this isn't happening.
+concept: we have easy access to ld sp,a16 and ret? could try something here
+early db is item data. hm. high db seems useless.
+
+ld sp,a16:
+so we have these bytes in corruption: 08, 0A, 0B, 0F, 31, C9, CA, CB, D9, DB, EC.
+not many appealing jumps. stack pointers?
+08CA - C448
+310A - C6D7
+31D9 - CC55
+0FCB - CD0C
+31CB - CD3E
+0AEC - D0D1 - this could fall through to 2 controllable bytes at D13A
+0B0B - D1FA
+0F0B - D2DC
+080F - D362 - x/y pos. could jr r8? that rst 38s...
+0ACA - D395 (DA67)
+0F0F - D526
+310F - D736
+0A0B - D920
+0B0A - DA20, if the last section of map data is tame, this is usable? never mind.
+0A0F - DAC6, so close aaaaa
+080A - DAD3
+early DB - we can put the stack pointer in items. yet ANOTHER not-quite-controllable-enough-jump.
+	could jump to early ff - that COULD have a couple controllable bytes
+	
+for D0D1 jump: we have 2 totally controllable bytes and 2 partially controllable bytes, that's enough for 1 inst and a jp (hl)
+we'd could have l as low as 84, as high as B4? - h needs to be DA
+
+here's the code that runs:
+	2 bytes at D0D1
+	add h
+	inc d
+	ld bc,0060
+	our 2 bytes: load a reg to h or l, then jump? thought: ld l,(hl)? good bytes are unlikely...
+	
+	hl is naturally dac4. pretty close! ld a,l should work. (6F E9)
+	
+seed code:
+	ld sp, xxxx - 31 00 (a0-fd) (requires y pos mod 256 = 31)
+	jp b882 - (c/d 0/2/a/c / cd) 82 b8 
+	
+here's the route:
+	start game (possibly wait on title screen for the right pokemon moves at D0D1 -- if that happens, we can never get an encounter)
+	seed: (a0-fd) (C3/CD / C2/C4/DA/DC (normal conditional) / (CA/CC/D2/D4) (opposite conditional)) 82 b8
+	pick up 131 (99 + 0x20) reviver seeds to corrupt a byte in pw gen code to 0x31 (never open menu!!!)
+	navigate to the correct map. map requirements:
+		y position mod 256 = 0x31
+		map has the byte D9 @ D9D5
+		@ D900 + (D9D4), map has the sequences 31 EC 0A and C9/D9 without any harmful bytes in the way (C9, CA, D9, DB, EC)
+	walk until step counter is 6F
+	wait until ignore input counter is E9
+	retire
+
+now here's what happens:
+	game tries to generate password. 
+	instead, it sets the stack pointer to D9D4 (in ECHO RAM), which is in map data.
+	it returns to map data, and with our manipulated map data, sets the stack pointer to 0AEC and returns to D0D1
+	at D0D1, it goes through some random harmless data
+		note: maybe we could use D0D1 to put a better value in a register and avoid relying on map position
+	and executes the ignore input counter and step counter, which set up a jump to DAA7
+	at DAA7, it executes more data, which unfortunately wrecks the hl register, then reaches the map position and map seed.
+	those place the stack pointer in ram (otherwise the ACE routine will crash) and jump to B882 (ACE routine)
+	
+	potential issues: we need the a register to be between 84 and B2. we have a *little* control over it with the title screen
+	but any approach will need to consider that.
+	
+	we need the opcodes in map/coords/seed code to not be run over with other opcodes. this limits our x-position and map data
+	
+what can D0D1 do?
+ditto, magikarp, weedle: 0000
+ponyta, nidoran: 0802 (crash later, disables SRAM)
+bulba, scyther: 0806
+charmander: 0826
+squirtle: 0832
+pidgeotto: 0C0A (inc c, ld a,(bc). worth considering!)
+pika: 1842 (funny jump through nops)
+abra: 3843 (funny conditional jump through nops)
+clefairy: 3863
+gastly: 6A02 (ld l,d. )
+rhydon: 8832 (adc b, ldd a,hl. worth considering!) 
+onix: C822 (crash)
+
+
+what happens to the registers during ace? goal: 8B-B2
+at start,
+xx (00/04)00 6200 DB38
+at return,
+D5 (00/04)00 001A DAC4
+in map code, the following instrs can run:
+	crash: ret reti ld sp,(a16) inc sp jp z,a16 DB EC
+	no effect: ld (a16),sp inc (hl) ld (hl),h
+	loads: a,(bc) c,l c,(hl) d,c d,d d,l h,b l,h l,l l,(hl) l,a a,d a,e
+	math: inc de dec bc dec hl rrca prefix cb
+	rrca, prefix cb and the indirect loads are of interest
+	?? (00/04)?? ??1A ???? (although if h gets hit that's rip)
+return to D0D1. we now need to get a register to the right value
+	if any already are (unlikely), nice!
+	can adc b but that at best adds 5 to a
+	inc c, ld a,(bc) is the appealing one here, just gives another shot at making this work
+	add h (DA). if a is between aa and d8 this works
+
+stack data is offset 1b on the bottom middle map
+
+after TOO MUCH C i have finally found a seed. here's the route.
+	rhydon on title screen (for the dec hl)
+	seed E8C382B8
+	never get an encounter. get a skip sandwich first, then only open the menu after you get 99 + 32 reviver seeds.
+	navigate to (x, y) = (52, f932)
+	walk until step counter is E9 (jp hl)
+	wait until ignore input counter is 6e (ld l, (hl))
+	wait until rng byte in seed is 8B-B2
+	win
+	
+	code: 
+	ld sp,F9D4	(pw code)
+	ret			(pw code)
+	@F9D4: D90F	(map data)
+	ld sp,0AEC	(map data)
+	ret			(map data)
+	@0AEC: F0D1	(some vanilla code, don't know, don't care)
+	ldd (hl),a	(rhydon's moves, hl = wPasswordRandom)
+	ld l,(hl)	(ignore input counter, 8B >= (hl) >= B2)
+	jp hl		(step counter)
+	ld hl,0002	(regrettably) (text data)
+	ld d,d		(x coord)
+	nop			(x coord)
+	ld sp,E8F9	(y coord + seed byte 1)
+	jp B882		(seed)
+	
+	
+
+	
