@@ -141,7 +141,7 @@ Difficulty: 2/10
 To your right, you can see a pair of friendly, nice trainers. Just kidding, they will crash the game if you try to fight them! Find a way to bypass both trainers and read the sign on the other side.  
 <img src="/ZZAZZ/2019/Images/PK1-Start.png" height="250"/>
 
-After a little combing of the disassembly (link), I found a section of memory related to map objects. Changing the data of the 1st and 2nd objects (the trainers) allow you to bypass them, by say, changing their coordinates, or more comically, just making them face away from you.  
+After a little combing of [the disassembly](https://github.com/pret/pokecrystal/tree/master/engine/overworld), I found a section of memory related to map objects. Changing the data of the 1st and 2nd objects (the trainers) allow you to bypass them, by say, changing their coordinates, or more comically, just making them face away from you.  
 <img src="/ZZAZZ/2019/Images/PK1-Solved.png" height="250"/>
 
 Note: my first solution attempt was to interrupt the code that checked if a trainer would see me. It worked…. but not quite well enough. https://www.youtube.com/watch?v=gmCY7XhedG4
@@ -379,7 +379,7 @@ Walk until the step counter is 0xE9 (opcode jp (hl))
 Wait until the ignore input counter will load a useful value into L
 Retire (generate a password)
 ```
-With a theoretical exploit found, I set out to find a working map. I'd already ported most of the map generation code to C, so it wasn't too bad to port the remaining biomes. (link to code) After some fairly disappointing results, I finally settled on a working seed with the y-coordinate restriction -- seed E8C382B8 would have a working map at (0x52, 0xF931). That's 1743 maps north of the spawn location. So much for having my TAS being a reasonable length, but at least my exploit would work in practice. My route is now as follows:
+With a theoretical exploit found, I set out to find a working map. I'd already ported most of the map generation code to C, [so it wasn't too bad to port the remaining biomes.](/ZZAZZ/2021/Code/foolsHC4.c) After some fairly disappointing results, I finally settled on a working seed with the y-coordinate restriction -- seed E8C382B8 would have a working map at (0x52, 0xF931). That's 1743 maps north of the spawn location. So much for having my TAS being a reasonable length, but at least my exploit would work in practice. My route is now as follows:
  
     Wait for Rhydon on title screen    
     Set seed to E8C382B8
