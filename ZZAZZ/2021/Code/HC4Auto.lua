@@ -19,17 +19,17 @@ end
 function printtext(text, data, compare, y)
   local color = "green"
   if (type(data) == 'table') then
-	local datatext = ""
-	local i = 0
-	for _ in pairs(data) do i = i + 1 end
-	for j = 0, i - 1 do
-		datatext = datatext .. string.format("%02X ", data[j])
-		if data[j] ~= compare[j + 1] then
-			color = "red"
-		end
-	end
-	gui.text(0, y * 16, text .. datatext, color)
-	return
+    local datatext = ""
+    local i = 0
+    for _ in pairs(data) do i = i + 1 end
+    for j = 0, i - 1 do
+      datatext = datatext .. string.format("%02X ", data[j])
+      if data[j] ~= compare[j + 1] then
+        color = "red"
+      end
+    end
+    gui.text(0, y * 16, text .. datatext, color)
+    return
   end
   
   if (type(compare) == 'number' and data ~= compare)
@@ -43,22 +43,22 @@ end
 function itemgethandler()
   if memory.readbyte(0xcf91) == 4 then
     delayFrames = 150
-	readnewchar = true
+    readnewchar = true
     return 
   end
   _callback = function()
-	savestate.loadslot(1)
-	delayFrames = 1
-	readnewchar = false
+  savestate.loadslot(1)
+  delayFrames = 1
+  readnewchar = false
   end
 end
 
 function encounterhandler()
   _callback = function()
-	savestate.loadslot(1)
-	savestate.saveslot(2)
-	delayFrames = 1
-	readnewchar = false
+  savestate.loadslot(1)
+  savestate.saveslot(2)
+  delayFrames = 1
+  readnewchar = false
   end
 end
 
@@ -73,11 +73,11 @@ io.input("path.txt")
 while true do
   while delayFrames ~= 0 do
     if _callback then
-	  _callback() 
-	  _callback = nil
-	end
+      _callback() 
+      _callback = nil
+    end
     printalltext()
-	emu.frameadvance() 
+    emu.frameadvance() 
     delayFrames = delayFrames - 1
   end
   
@@ -90,33 +90,33 @@ while true do
   end
   
   if curchar then 
-	savestate.saveslot(1)
+    savestate.saveslot(1)
   end
-	
+
   if curchar == "I" then
-	delayFrames = 150
+    delayFrames = 150
   else
-	delayFrames = 18
+    delayFrames = 18
   end
   setinputs = function()
-	if curchar == "R" then joypad.set({ ["Right"] = true }) end
-	if curchar == "L" then joypad.set({ ["Left"]  = true }) end
-	if curchar == "U" then joypad.set({ ["Up"]    = true }) end
-	if curchar == "D" then joypad.set({ ["Down"]  = true }) end
-	if curchar == "I" then joypad.set({ ["A"]  = true }) end
+    if curchar == "R" then joypad.set({ ["Right"] = true }) end
+    if curchar == "L" then joypad.set({ ["Left"]  = true }) end
+    if curchar == "U" then joypad.set({ ["Up"]    = true }) end
+    if curchar == "D" then joypad.set({ ["Down"]  = true }) end
+    if curchar == "I" then joypad.set({ ["A"]  = true }) end
   end
-	
+
   advframe = function()
-	printalltext()
-	emu.frameadvance()
-	setinputs()
+    printalltext()
+    emu.frameadvance()
+    setinputs()
   end 
-	
+
   advframe()
   advframe()
   if prevchar ~= curchar then
-	advframe()
-	advframe()
+    advframe()
+    advframe()
   end
   
   printalltext()
