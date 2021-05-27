@@ -164,7 +164,8 @@ oh. Didn't really expect that to actually work. Nice. If it hadn't, my next plan
 
 ### Pwnage Kingdom 3 - Encryptic
 Difficulty: 10/10  
-This save file contains exactly two maps. You're currently standing in one of them. The other one is encrypted. Thankfully, you won't have to break the encryption. The algorithm and the key are all available to you! You can just walk up to the rock in front of the entrance, and decryption will begin. The problem is, the algorithm might take some time. Just a tiny bit. By tiny bit, I mean a couple thousand years. Or maybe there's a way to speed up the decryption? That's for you to find out! Decrypt the map and visit it to proceed.  
+This save file contains exactly two maps. You're currently standing in one of them. The other one is encrypted. Thankfully, you won't have to break the encryption. The algorithm and the key are all available to you! You can just walk up to the rock in front of the entrance, and decryption will begin. The problem is, the algorithm might take some time. Just a tiny bit. By tiny bit, I mean a couple thousand years. Or maybe there's a way to speed up the decryption? That's for you to find out! Decrypt the map and visit it to proceed.
+
 ![](/ZZAZZ/2019/Images/PK3-Start.png)
 
 I've never worked with optimizing something like this, so I'm already a little worried before starting. Found the code through input handling code again -- [here's the asm](/ZZAZZ/2019/Code/pk3.asm) with a few added labels.
@@ -179,11 +180,11 @@ The first flaw I noticed was that only 3 of the 4 bytes of the outer RNG are use
 
 (I didn't realize this at the time because of the aforementioned endianness errors -- I thought I still had to go through around a million seeds, so I kept looking for improvements)
 
-The next flaw I noticed was in the inner RNG. Both the inner and outer RNGs are linear congruential generators. ([LCGs](https://en.wikipedia.org/wiki/Linear_congruential_generator)) LCGs generate random numbers based on the formula x=(ax+b)\mod m, where a and b are constants. (For the outer 32 bit LCG, m is 2^32, and for the inner 16 bit LCG, m is 2^16). Eventually, a number will repeat. The maximum period between repeats would be equal to m.
+The next flaw I noticed was in the inner RNG. Both the inner and outer RNGs are linear congruential generators. ([LCGs](https://en.wikipedia.org/wiki/Linear_congruential_generator)) LCGs generate random numbers based on the formula ![md should really support latex](https://latex.codecogs.com/svg.latex?%5Cinline%20x%3D%28ax&plus;b%29%5Cmod%20m), where a and b are constants. (For the outer 32 bit LCG, m is 2^32, and for the inner 16 bit LCG, m is 2^16). Eventually, a number will repeat. The maximum period between repeats would be equal to m.
 
 With the inner LCG repeating over 2^28 times, even the maximum length period of 2^16 would loop a huge number of times. My idea here is that successive loops of the same period would cancel each other out. You can see this quite easily with a period length of 512. (The encrypted map is 512 bytes long.) The first 512 iterations of the LCG XORs each byte of the map with a random number, but the next 512 iterations completely undo that.
 
-However, with a period length of 513, this becomes much more complicated. After 513 iterations, while the random numbers start repeating, they are being XORed with different bytes of the encrypted map. In fact, it will take \frac{2LP}{\gcd(L,P)} iterations for a period to fully cancel itself out, where L is the map length and P the period length.
+However, with a period length of 513, this becomes much more complicated. After 513 iterations, while the random numbers start repeating, they are being XORed with different bytes of the encrypted map. In fact, it will take ![like seriously, this looks terrible](https://latex.codecogs.com/gif.latex?%5Cinline%20%5Cfrac%7B2LP%7D%7B%5Cgcd%28L%2CP%29%7D) iterations for a period to fully cancel itself out, where L is the map length and P the period length.
 
 Even for the worst possible period length, eliminating these redundant iterations is a 4-fold improvement, and since the vast majority of period lengths are either short or powers of 2, this brought down the total required time to under 3 minutes on my computer.
 
@@ -191,9 +192,9 @@ Even for the worst possible period length, eliminating these redundant iteration
 ![](/ZZAZZ/2019/Images/PK3-Solved.png)
 
 #### Post-completion improvements
-It turns out there's one more pretty substantial improvement that can be made to the outer loop, which I did after completing the challenge. The outer loop has a period of length 2^30. This explains why only 1270 seeds had to be run -- the outer loop iterates 2^31 - 1270 times, so all but the last 1270 cancelled each other out. Knowing this, we can avoid having to keep track of how many times each seed was run, and just run the last 1270 seeds. This brought the runtime down to 47 seconds on my computer.
+It turns out there's one more pretty substantial improvement that can be made to the outer loop, which I did after completing the challenge. The outer loop has a period of length 2^30. This explains why only 1270 seeds had to be run -- the outer loop iterates 2^31 - 1270 times, so all but the last 1270 cancelled each other out. Knowing this, I can avoid having to keep track of how many times each seed was run, and just run the last 1270 seeds. This brought the runtime down to 47 seconds on my computer.
 
-But wait! We can do better! At this point, this is just turning into a challenge to see how fast I can make this. We're only running the last 1270 seeds… which would be equivalent to running 1270 seeds from the start, but inverting the RNG algorithm. This is possible with the use of a modular multiplicative inverse, which is some math that definitely went a bit over my head, but brought the runtime down to 33 seconds.
+But wait! We can do better! At this point, this is just turning into a challenge to see how fast I can make this. I'm only running the last 1270 seeds… which would be equivalent to running 1270 seeds from the start, but inverting the RNG algorithm. This is possible with the use of a modular multiplicative inverse, which is some math that definitely went a bit over my head, but brought the runtime down to 33 seconds.
 
 At this point I'm pretty sure over half of the runtime is just checking for whether seeds have been generated yet in a list. I change that to an array instead, and… ok it was more than half. Runtime is down to 350 ms. I think I'm done here. [Here's my final code.](/ZZAZZ/2019/Code/PK3.cs)
 
