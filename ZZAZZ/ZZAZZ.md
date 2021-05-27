@@ -17,7 +17,7 @@ Here we go! At the end of the game, a password is generated. This password inclu
   - If it is, it sets a bit of a variable.
 
 I figure if I set that variable to 0xFF, I'll get the final achievement. I try that and…. my password doesn't change. Hmm. A quick look at the code shows the instruction `and a,3F` -- ignoring the top 2 bits of the variable even if it's set. I edited the code to `and a,FF`, entered the resulting password on the site, and it worked!  
-![](/2017/31337.png)
+![](/ZZAZZ/2017/31337.png)
 
 Main difficulty here was just finding the password code -- the way it checks achievements is rather indirect, so my initial attempts to find the code based on the other achievements were all unsuccessful. The only ways I found to quickly find the code were through the in-game time and pokedex flags, both of which directly accessed as part of the password algorithm. The overall code was quite easy, I think I solved this about 5 minutes after finding the code.
 
@@ -28,7 +28,7 @@ Probably my favorite save to date - there's a client application which allows yo
 ### Cracker Cavern 1 - I know how to edit memory
 Difficulty: 1/10  
 Use whatever tools you desire to go through the rock barrier below. Note: basic protections against cheating are implemented.  
-![](/2018/Images/CRACKER_CAVERN_I.webp)
+![](/ZZAZZ/2018/Images/CRACKER_CAVERN_I.webp)
 
 Easiest hacking challenge in one of these by far - I used the same approach as I did for the first room in the 2017 challenge and just edited the map.
 https://www.youtube.com/watch?v=C6BOSZ10Bp4  
@@ -45,10 +45,10 @@ So I decided to reverse the communication protocol instead! Surely not the easie
 
 I started with the client application first - it's written in Python, so I could mess with the code without much effort. I rigged it to just print out any data it was sending to or receiving from the game.
 
-![](/2018/Images/CC2-server.png)  
+![](/ZZAZZ/2018/Images/CC2-server.png)  
 *A typical exchange with the server when it loads a room*
 
-![](/2018/Images/CC2-packets.png)  
+![](/ZZAZZ/2018/Images/CC2-packets.png)  
 *I could also use the functionalities in the emulator I'm using using to watch the data transfers, so the Python client mostly just served to confirm what I was seeing*
 
 I decided to focus on the first of the two outward data transfers. I was able to put a write breakpoint on the byte used for data transfer itself, and could find the block of data that was being sent pretty easily from that. Some analysis of this data later, I was able to put together a picture of what data was being sent when a room is loaded:
@@ -60,9 +60,9 @@ I decided to focus on the first of the two outward data transfers. I was able to
 - ???\? (2 bytes, unknown)
 
 Those last 2 bytes look pretty suspicious to me. It's getting them from somewhere in pokemon box data, where this save stores a lot of code and variables. I try editing that data to 0x1337, and....  
-![](/2018/Images/CC2-wrongmap.png)  
+![](/ZZAZZ/2018/Images/CC2-wrongmap.png)  
 Hm. I'm clearly on the right path. Maybe it's little endian?  
-![](/2018/Images/CC2-mysterious.png)  
+![](/ZZAZZ/2018/Images/CC2-mysterious.png)  
 I enter 0x3713 instead, and it loads a map named "Mysterious" and congratulates me for solving the challenge!  
 
 
@@ -99,12 +99,12 @@ for i in range(25):
 #and xors each byte with a byte of the scrambled key
 XorPhoto()
 ```
-I replicated the [code](/2018/Code/CC3.cs) in C# without too much difficulty. Now I needed some way of measuring entropy in the image, to figure out whether a generated image was in fact the correct image. I ended up just checking how many bytes were equal to 0 or 0xFF, which I expected to be common in the decrypted image… and immediately got some weird results. I was getting a lot of results that had 10 or more bytes equal to 0 or 0xFF, which would be statistically impossible if you assumed all incorrect keys would basically output random data.
+I replicated the [code](/ZZAZZ/2018/Code/CC3.cs) in C# without too much difficulty. Now I needed some way of measuring entropy in the image, to figure out whether a generated image was in fact the correct image. I ended up just checking how many bytes were equal to 0 or 0xFF, which I expected to be common in the decrypted image… and immediately got some weird results. I was getting a lot of results that had 10 or more bytes equal to 0 or 0xFF, which would be statistically impossible if you assumed all incorrect keys would basically output random data.
 
 After a walk and some discussion with my dad, I had the idea that each correct byte of the key would correctly decrypt several bytes of the image. See, in the key scrambling portion of the decryption algorithm, different bytes of the key can affect each other, resulting in a highly unpredictable result. However, while the key is still modified during the part where it XORs the photo, it's much more predictable there. If the 0th byte of the photo is XORed with 0x01, then the 10th will always be XORed with 0xF1, the 20th with 0xA9, the 30th with 0x77, and so on. If a single byte is decrypted correctly, then every 10th byte afterward will also be decrypted correctly.
 
 Using this knowledge, I was to calculate what the key should look like after the key scrambling process. (commented code in AnalyzePhoto() and AnalyzeLists()). I tried entering that key, and…  
-![](/2018/Images/CC3-solution.png)  
+![](/ZZAZZ/2018/Images/CC3-solution.png)  
 Yay! Doesn't solve the problem (I only know what the key looks like after the scrambling process, not before) but it sure makes it a lot easier to check if an answer is right, and skips running a quarter of the code while I'm at it.
 
 I tried reversing the key scrambling algorithm -- it might be possible but I'm unsure, and I didn't have any luck with it, so I just let my computer bruteforce it, which took about 2 hours, and read a book in the meantime.
@@ -137,10 +137,10 @@ My second favorite save(s). Also would recommend playing these, although fair wa
 ### Pwnage Kingdom 1 - Blue Sailors of Death
 Difficulty: 2/10  
 To your right, you can see a pair of friendly, nice trainers. Just kidding, they will crash the game if you try to fight them! Find a way to bypass both trainers and read the sign on the other side.  
-![](/2019/Images/PK1-Start.png)
+![](/ZZAZZ/2019/Images/PK1-Start.png)
 
 After a little combing of the disassembly (link), I found a section of memory related to map objects. Changing the data of the 1st and 2nd objects (the trainers) allow you to bypass them, by say, changing their coordinates, or more comically, just making them face away from you.  
-![](/2019/Images/PK1-Solved.png)
+![](/ZZAZZ/2019/Images/PK1-Solved.png)
 
 Note: my first solution attempt was to interrupt the code that checked if a trainer would see me. It worked…. but not quite well enough. https://www.youtube.com/watch?v=gmCY7XhedG4
 
@@ -150,13 +150,13 @@ Difficulty: 3/10 with a good guess, 6/10 without
 This save file contains exactly two maps. You're currently standing in one of them, but the other one is inaccessible. Or is it? Perhaps there's a way to access it? That's your job. Enter the lost, hidden second map to proceed.
 
 There are two variables - wMapGroup and wMapNumber - where the current map is stored. (I kinda just poked around in map loading code until I found them.) Change these to, say, 1 and 1, and you too can spawn on the counter in the Olivine City Pokecenter!  
-![](/2019/Images/PK2-Olivine.png)  
+![](/ZZAZZ/2019/Images/PK2-Olivine.png)  
 Now if you had thought of it, you could try setting the map ID to 1 higher than the map where you spawn in. Yeah, that's the answer. You spawn in map 9163, the map you want to load is 9164. Needless to say, I did not think of this.
 
 By looking at what reads wMapGroup/wMapNumber, I was able to find a 9 byte map header stored in Pokemon box data. Wasn't able to make much sense of it, but I figured it must have been copied there at some point. I put a write breakpoint on that, and… wait what?  
-![](/2019/Images/PK2-Copy.png)  
+![](/ZZAZZ/2019/Images/PK2-Copy.png)  
 It's copying 100 bytes (0x64) in. Now this could just be more map data, but I'd expect all the headers to be next to each other in the save (that's where it's copying from). The way the game finds the headers is effectively (some pointer found based on wMapGroup) + (9 * wMapNumber). This means that increasing the map number to somewhere between 64 and 73 would mean the game would still be reading from this data it copied in. Worth a shot I guess? I try 64, and  
-![](/2019/Images/PK2-Solved.png)  
+![](/ZZAZZ/2019/Images/PK2-Solved.png)  
 oh. Didn't really expect that to actually work. Nice. If it hadn't, my next plan of action would have been to check where the game kept headers for other maps, which I could check in other save files.
 
 (Note: I solved this in 2019 on pure accident. I found wMapGroup and wMapNumber and nothing beyond that. I had set the two variables to different values, just messing around, and meant to set them back to their initial values. I must have typoed and entered the map number instead. I didn't actually realize how I'd "solved" it until much later.)
@@ -165,9 +165,9 @@ oh. Didn't really expect that to actually work. Nice. If it hadn't, my next plan
 ### Pwnage Kingdom 3 - Encryptic
 Difficulty: 10/10  
 This save file contains exactly two maps. You're currently standing in one of them. The other one is encrypted. Thankfully, you won't have to break the encryption. The algorithm and the key are all available to you! You can just walk up to the rock in front of the entrance, and decryption will begin. The problem is, the algorithm might take some time. Just a tiny bit. By tiny bit, I mean a couple thousand years. Or maybe there's a way to speed up the decryption? That's for you to find out! Decrypt the map and visit it to proceed.  
-![](/2019/Images/PK3-Start.png)
+![](/ZZAZZ/2019/Images/PK3-Start.png)
 
-I've never worked with optimizing something like this, so I'm already a little worried before starting. Found the code through input handling code again -- [here's the asm](/2019/Code/pk3.asm) with a few added labels.
+I've never worked with optimizing something like this, so I'm already a little worried before starting. Found the code through input handling code again -- [here's the asm](/ZZAZZ/2019/Code/pk3.asm) with a few added labels.
 
 A lot of the code is just doing 32-bit operations on a gameboy (multiplication via repeated addition, ew), so porting it to my computer brings the time down to… 100 years. I mean it's not an insignificant improvement, but…
 
@@ -187,14 +187,15 @@ However, with a period length of 513, this becomes much more complicated. After 
 
 Even for the worst possible period length, eliminating these redundant iterations is a 4-fold improvement, and since the vast majority of period lengths are either short or powers of 2, this brought down the total required time to under 3 minutes on my computer.
 
-(At this point I realized my endianness mistakes, and fixing those along with an off-by-one that took about 40 minutes to track down let me solve this challenge!) ![](/2019/Images/PK3-Solved.png)
+(At this point I realized my endianness mistakes, and fixing those along with an off-by-one that took about 40 minutes to track down let me solve this challenge!)  
+![](/ZZAZZ/2019/Images/PK3-Solved.png)
 
 #### Post-completion improvements
 It turns out there's one more pretty substantial improvement that can be made to the outer loop, which I did after completing the challenge. The outer loop has a period of length 2^30. This explains why only 1270 seeds had to be run -- the outer loop iterates 2^31 - 1270 times, so all but the last 1270 cancelled each other out. Knowing this, we can avoid having to keep track of how many times each seed was run, and just run the last 1270 seeds. This brought the runtime down to 47 seconds on my computer.
 
 But wait! We can do better! At this point, this is just turning into a challenge to see how fast I can make this. We're only running the last 1270 seeds… which would be equivalent to running 1270 seeds from the start, but inverting the RNG algorithm. This is possible with the use of a modular multiplicative inverse, which is some math that definitely went a bit over my head, but brought the runtime down to 33 seconds.
 
-At this point I'm pretty sure over half of the runtime is just checking for whether seeds have been generated yet in a list. I change that to an array instead, and… ok it was more than half. Runtime is down to 350 ms. I think I'm done here. [Here's my final code.](/2019/Code/PK3.cs)
+At this point I'm pretty sure over half of the runtime is just checking for whether seeds have been generated yet in a list. I change that to an array instead, and… ok it was more than half. Runtime is down to 350 ms. I think I'm done here. [Here's my final code.](/ZZAZZ/2019/Code/PK3.cs)
 
 
 ### Pwnage Kingdom 4 - Master of Saving
@@ -204,7 +205,7 @@ Reverse-engineer the game saving system. To prove your understanding of the save
 Okay… this sounds intimidating, but let's get an idea what I'm looking at. I try to save the game, and "The aura of Missingno.'s corruption prevents you from saving" pops up. Funny. I'll just analyze the save in a location where I can actually save the game; I don't see any reason to try to bypass this.
 
 I again find the save code by tracing execution from input handling code. The start of the save routine looks like this:  
-![](/2019/Images/PK4-ROP.png)  
+![](/ZZAZZ/2019/Images/PK4-ROP.png)  
 So it prints some text, does some graphics stuff (Request1bpp and AEDB both do graphical stuff), and then oh what the *fuck*.
 ```
 ld sp,AE18
@@ -215,13 +216,13 @@ It's 10 pm, I'm too tired for this shit.
 The next day:
 So I know about [ROP](https://en.wikipedia.org/wiki/Return-oriented_programming) in theory, but actually encountering it is a totally different thing. The concept is, by hijacking the stack pointer, you can write a program using existing code by returning to just before a return instruction, executing a few instructions, and repeating. With control of the call stack, you effectively have total control of what code is executed. It's just really hard to wrap your head around, since it executes code in a completely non-linear order. 
 
-But it gets worse. I start looking at what the ROP does, and it's not pretty. There's a jumptable located right after this code (More precisely, a table of stack pointer values.) What it does (or at least, what it *would* do, if this was written in a sane way) is call a function in that jumptable, based on the value at the address in the de register. ([my transcribed assembly is here](/2019/Code/pk4.asm) - I'm talking about ropFuncAE18.) We've basically got a glorified bytecode interpreter, written in ROP.
+But it gets worse. I start looking at what the ROP does, and it's not pretty. There's a jumptable located right after this code (More precisely, a table of stack pointer values.) What it does (or at least, what it *would* do, if this was written in a sane way) is call a function in that jumptable, based on the value at the address in the de register. ([my transcribed assembly is here](/ZZAZZ/2019/Code/pk4.asm) - I'm talking about ropFuncAE18.) We've basically got a glorified bytecode interpreter, written in ROP.
 
 After a few solid hours of transcribing the actual code being run and analyzing it, I put together 13 separate ROP functions. Some of these (01, 02, 07, 0B) are pretty tame, just copy data from one place to another. 03, 0D and 0E seem to have indirects, which is messy, 08 and 09 involve (a single instruction) of self rewriting code, which is highly cursed but manageable, and 04 seems to be a sort of "return" byte, which I didn't really analyze. The last three are the interesting ones. 05 is *really* long and incredibly hard to follow, but appears to encrypt… something. Not really sure. (A look at the source code after I solved this confirmed that it was intentionally obfuscated.) 06 rotates a 0x1B0 byte portion of memory, which I'm guessing is the save data. And 0C is a loop instruction. (The loop variable is stored in the bytecode itself, which is really ugly. Also 00 and 0A don't correspond to functions, not sure why.)
 
-At this point, I figured I had two options - recreate the bytecode interpreter, or make a bytecode decompiler. I ended up going with the former -- nothing much came of it and I had to write the decompiler anyway, but if you're interested, [here's the code for both.](/2019/Code/PK4.cs)
+At this point, I figured I had two options - recreate the bytecode interpreter, or make a bytecode decompiler. I ended up going with the former -- nothing much came of it and I had to write the decompiler anyway, but if you're interested, [here's the code for both.](/ZZAZZ/2019/Code/PK4.cs)
 
-[Here's what my decompiler spat out](/2019/Code/DecompiledBytecode.py), with some edits made for clarity. I was able to map out what bytes corresponded to what in the save data, and it came out to the correct length of 0x1B0, which was a good sign:
+[Here's what my decompiler spat out](/ZZAZZ/2019/Code/DecompiledBytecode.py), with some edits made for clarity. I was able to map out what bytes corresponded to what in the save data, and it came out to the correct length of 0x1B0, which was a good sign:
 ```
 00-8F party pokemon
 90 checksum
@@ -241,12 +242,12 @@ A9-140 items
 1AE-1AF overall checksum
 ```
 I copied all the data into the relevant places (00010203 into pokemon, 919293 into progress flags, etc), made a savestate, saved the game, and uploaded the file.  
-![](/2019/Images/PK4-Expired.png)  
-Oh well. Didn't really expect to get it first try. I'll just feed [loud bastard child](/2019/Images/Spencer1.jpg) and try again.
+![](/ZZAZZ/2019/Images/PK4-Expired.png)  
+Oh well. Didn't really expect to get it first try. I'll just feed [loud bastard child](/ZZAZZ/2019/Images/Spencer1.jpg) and try again.
 
 WAIT. It didn't say my save was corrupted or anything. It said it was in the wrong location. I enter Pwnage Kingdom 4 on the site, upload the same file and it works!  
-![](/2019/Images/PK4-Solved.png)  
-I now feed [loud bastard child](/2019/Images/Spencer2.jpg) in celebration, who really wants dinner and could not care less about the achievement I just accomplished.
+![](/ZZAZZ/2019/Images/PK4-Solved.png)  
+I now feed [loud bastard child](/ZZAZZ/2019/Images/Spencer2.jpg) in celebration, who really wants dinner and could not care less about the achievement I just accomplished.
 
 
 ## 2021 - Road to Infinity
@@ -260,11 +261,11 @@ Some people actually solved this by using a walk-through-walls cheat and using s
 
 First off, 524272 is roughly 2^19, which is a weird number. Don't really know what to make of that yet. 
 
-I started with the variables wYCoord and wXCoord. They're locked between 0x10 and 0x1F for some reason, if you move outside of a 16x16 area, they loop. I put a breakpoint on the Y coordinate and pretty quickly found some code that was causing the loop. I didn't bother analyzing the code -- I just walked north, and every time the code was run, one of the values in a register decreased by one. I figure this value has something to do with what map the player is on - if each map is 16x16, then the challenge becomes "Walk 2^15 - 1 maps in any direction," which would make perfect sense if the variables that keep track of which map you're on are signed shorts. I try setting that register equal to 0x7FFF, and I end up here:
-![](/2021/Images/HC1-fail.png)
+I started with the variables wYCoord and wXCoord. They're locked between 0x10 and 0x1F for some reason, if you move outside of a 16x16 area, they loop. I put a breakpoint on the Y coordinate and pretty quickly found some code that was causing the loop. I didn't bother analyzing the code -- I just walked north, and every time the code was run, one of the values in a register decreased by one. I figure this value has something to do with what map the player is on - if each map is 16x16, then the challenge becomes "Walk 2^15 - 1 maps in any direction," which would make perfect sense if the variables that keep track of which map you're on are signed shorts. I try setting that register equal to 0x7FFF, and I end up here:  
+![](/ZZAZZ/2021/Images/HC1-fail.png)
 
 Well it worked. I'm just in a tree. I tried this in another location, where I didn't warp into a tree… and immediately got a game over because the wild encounter was so strong. I tried again, this time using savestates to avoid encounters, and  
-![](/2021/Images/HC1-solved.png)  
+![](/ZZAZZ/2021/Images/HC1-solved.png)  
 Congratulations, you reached the end of the world. Kind of. The world will loop back around. Glitchtopia isn't flat. That said, here's a reward for coming this far! (challenge 1 password)
 
 (Alternative, slightly funnier solution: I figure it's checking whether the map coordinate is equal to 0x7FFF, and I found the code that checks whether to give you the achievement by just searching for `cp a,7F`. Modifying this code lets you "reach" the edge of the world without even moving.)
@@ -282,7 +283,7 @@ This is essentially a nerfed version of the 2017 challenge. The password is just
 ### Hacking Challenge 3 - Worry Seed
 Difficulty: 7/10 in terms of actual difficulty, but so much of this challenge is essentially busywork so effectively higher.  
 I was playing this event, and I found a very interesting seed! The problem is… I don't remember it. But I have a screenshot of the location I spawned in at. Maybe you can use it to recover the seed I used? I also happen to remember that the last digit of the seed was "1".  
-![](/2021/Images/HC3-goal.png)
+![](/ZZAZZ/2021/Images/HC3-goal.png)
 
 I was excited about this one at first. I've done [work to search for fast seeds in randomizers before](https://www.youtube.com/watch?v=PuPxjKeVMvY), so this seems right up my alley.
 
@@ -290,12 +291,12 @@ Oh you sweet summer child. You babe, swaddled in the cashmere blankets of ignora
 
 I considered some alternate approaches to avoid having to go through all that code -- running a brute force script in an emulator would probably be doable, but I'd have to figure out how to even implement that. I messed with the idea of autogenerating some really ugly C from the assembly and actually kinda got that working, but I figured I'd have to analyze the code to figure out where it outputted data, so I didn't finish it. Luna in the GCRI discord found out how to analyze the save in ghidra, which I tried, but even after fixing some stuff, most of the output was messy to the point of not being usable. (I did use the ghidra output for a few simpler functions.)
 
-After a solid few days of working on this off and on, I finally got some C code ([here](/2021/Code/foolsHC3.c)) ([but look at HC4 code instead](/2021/Code/foolsHC4.c)) that could replicate a map generated in the game. Nothing too interesting about most of it. I set that up to bruteforce the seed, and… got 780 results. Ah.
+After a solid few days of working on this off and on, I finally got some C code ([here](/ZZAZZ/2021/Code/foolsHC3.c)) ([but look at HC4 code instead](/ZZAZZ/2021/Code/foolsHC4.c)) that could replicate a map generated in the game. Nothing too interesting about most of it. I set that up to bruteforce the seed, and… got 780 results. Ah.
 
-![](/2021/Images/HC3-falsepositive.png)  
+![](/ZZAZZ/2021/Images/HC3-falsepositive.png)  
 *One of the false positives*
 
-It's important to understand how the game determines where to place you. After the starting map is generated, it goes through each tile of the map, and places you on the first normal ground tile it finds. In the goal image, since there's a normal ground tile on the row above the spawn point, I know I'm spawning in on the top row of the map. ![](/2021/Images/HC3-chunkboundary.png)  
+It's important to understand how the game determines where to place you. After the starting map is generated, it goes through each tile of the map, and places you on the first normal ground tile it finds. In the goal image, since there's a normal ground tile on the row above the spawn point, I know I'm spawning in on the top row of the map. ![](/ZZAZZ/2021/Images/HC3-chunkboundary.png)  
 *We could technically be on the rightmost column instead, but I'm politely ignoring that possibility for now.*
 
 In the interest of not having to work in C anymore, I made the assumption that only two maps were being shown at the spawn point - the starting map and the one above it. (This was a pretty big assumption -- notably any spawn in the the first 2 blocks of a map would show 4 maps - but it ended up being correct.) At the time, I was only checking for matches in the bottom map, hence all the false positives. I added a check in for the top map, ran my code, and after a few minutes, it got a match! It was 1 am. My sleep schedule is still a bit messed up as I write this.
@@ -337,7 +338,7 @@ With these limitations, I had to toss the Life Seeds idea out - it just didn't h
 
 D9D4 is in map data, and is therefore partially controllable. I started analyzing the map code further, to see what bytes could appear in the map (aka where I could return to), and only corruption biomes seemed to have much potential.
 
-![](/2021/Images/HC4-corruption.png)  
+![](/ZZAZZ/2021/Images/HC4-corruption.png)  
 *Corruption biomes have these glitchy looking tiles which have higher IDs than other tiles - these are interesting, as they could cause a return into RAM.*
 
 The most interesting places I could return to were DBxx (item data) and C9xx/CAxx/CBxx/D9xx (map data, again). Item data didn't seem promising -- there are only 18 kinds of items in the game, and I can't have more than 99 of an item -- so I started looking at what code could run in map data. My initial idea was that I could return to D9xx and get the code to survive a couple hundred bytes of map data without crashing, after which it would reach the in-game timer, which I could control. Unfortunately, corruption biomes are quite prone to crashing -- some of the aforementioned glitchy tiles are returns or non-existent opcodes, so that seemed like a bust. However, corruption biomes had some potentially interesting opcodes, notably 0x31, which could load a value to the stack pointer. (This isn't the first time this opcode has come up and it won't be the last.)
@@ -401,11 +402,11 @@ And the code that runs during ACE is:
 
 Note the presence of a new variable, wPasswordRandom -- this was actually a pretty big oversight on my part. If the code gets through map data without the L register being modified (much more likely than not), HL will point to a RNG dependent (read: manipulable) byte in the password. This was actually part of the intended solution to this challenge -- interesting that I still used it indirectly.
 
-I modified my map generation code to generate the entire portion of the map I'd be traversing, then ran a [breadth first search on the map in C#.](/2021/Code/HC4_PathGenerator.cs) I constructed a [file composed of UDLR characters](/2021/Files/path.txt) to represent the path I would take, and wrote [a Lua script that could convert that to TAS inputs.](/2021/Code/HC4Auto.lua) This took a little while -- I had almost no prior experience with Lua, and I also had to write code that could find/pick up reviver seeds along the way, as well as some Lua code to manipulate RNG. Nothing particularly worth documenting though, and my script only desynced once. (Items use hashing to determine whether you've already picked them up, and there must been a hash collision.)
+I modified my map generation code to generate the entire portion of the map I'd be traversing, then ran a [breadth first search on the map in C#.](/ZZAZZ/2021/Code/HC4_PathGenerator.cs) I constructed a [file composed of UDLR characters](/ZZAZZ/2021/Files/path.txt) to represent the path I would take, and wrote [a Lua script that could convert that to TAS inputs.](/ZZAZZ/2021/Code/HC4Auto.lua) This took a little while -- I had almost no prior experience with Lua, and I also had to write code that could find/pick up reviver seeds along the way, as well as some Lua code to manipulate RNG. Nothing particularly worth documenting though, and my script only desynced once. (Items use hashing to determine whether you've already picked them up, and there must been a hash collision.)
 
 I ended up with a 4 hour, 57 minute TAS. What an experience.
 
-![](/2021/Images/HC4-solved.png)
+![](/ZZAZZ/2021/Images/HC4-solved.png)
 
 https://www.youtube.com/watch?v=nlY6l7P-SJE (please don't actually watch this)
 
@@ -413,6 +414,6 @@ It was really cool how the previous challenges all mattered for this final one -
 
 There were a few oversights I made with my solution which could have made this easier. First, the intended use of the 99 stack glitch was to make the opcode `ld sp,hl` appear, which gave much more control over the stack pointer than map data did. I'm kinda glad I missed this tbh - it forced me to come up with what I think is a more interesting way of obtaining ACE. Second, I kind of fixated on 0xD9 appearing at the stack pointer, in order to return to map data. However, the values 0xC9, 0xCA, and 0xCB would have also returned to map data, and I completely forgot about them. This would have given me a lot more maps to work with -- maybe if I had realized this earlier, my final TAS wouldn't have been 5 hours. Third was the presence of a useful value in the HL register - it pointed to wPasswordRandom, a controllable byte. While I did end up using this, I could have used it in a way that would have allowed me to work with more maps. Still, I'm incredibly proud of the work I put into solving this.
 
-(Also, [here's my notes for the last challenge.](/2021/Files/HC4%20Notes.txt))
+(Also, [here's my notes for the last challenge.](/ZZAZZ/2021/Files/HC4%20Notes.txt))
 
 Hopefully I'll be able to participate in the event as it's going on next year! Looking forward to it.
