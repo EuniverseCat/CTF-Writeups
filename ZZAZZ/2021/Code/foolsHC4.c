@@ -600,7 +600,7 @@ void SaveEntireMap() {
 		}
 	}
 
-	FILE* f = fopen("C:\\Users\\Maya\\source\\repos\\foolsHC4\\Debug\\hugefuckingmap.bin", "wb+");
+	FILE* f = fopen("hugefuckingmap.bin", "wb+");
 	if (!f) {
 		perror("well fuck");
 		exit(42069);
