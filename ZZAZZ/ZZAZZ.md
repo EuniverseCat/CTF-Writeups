@@ -105,7 +105,7 @@ I replicated the [code](/ZZAZZ/2018/Code/CC3.cs) in C# without too much difficul
 
 After a walk and some discussion with my dad, I had the idea that each correct byte of the key would correctly decrypt several bytes of the image. See, in the key scrambling portion of the decryption algorithm, different bytes of the key can affect each other, resulting in a highly unpredictable result. However, while the key is still modified during the part where it XORs the photo, it's much more predictable there. If the 0th byte of the photo is XORed with 0x01, then the 10th will always be XORed with 0xF1, the 20th with 0xA9, the 30th with 0x77, and so on. If a single byte is decrypted correctly, then every 10th byte afterward will also be decrypted correctly.
 
-Using this knowledge, I was to calculate what the key should look like after the key scrambling process. (commented code in AnalyzePhoto() and AnalyzeLists()). I tried entering that key, and…  
+Using this knowledge, I was able to calculate what the key should look like after the key scrambling process. (commented code in AnalyzePhoto() and AnalyzeLists()). I tried entering that key, and…  
 <img src="/ZZAZZ/2018/Images/CC3-solution.png" height="250"/>  
 Yay! Doesn't solve the problem (I only know what the key looks like after the scrambling process, not before) but it sure makes it a lot easier to check if an answer is right, and skips running a quarter of the code while I'm at it.
 
