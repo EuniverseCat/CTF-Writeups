@@ -51,7 +51,7 @@ I started with the client application first - it's written in Python, so I could
 
 <img src="/ZZAZZ/2018/Images/CC2-packets.png" height="400"/>
 
-*I could also use the functionalities in the emulator I'm using using to watch the data transfers, so the Python client mostly just served to confirm what I was seeing*
+*I could also use the functionalities in the emulator I'm using to watch the data transfers, so the Python client mostly just served to confirm what I was seeing*
 
 I decided to focus on the first of the two outward data transfers. I was able to put a write breakpoint on the byte used for data transfer itself, and could find the block of data that was being sent pretty easily from that. Some analysis of this data later, I was able to put together a picture of what data was being sent when a room is loaded:
 
